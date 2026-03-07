@@ -1,14 +1,6 @@
 from pydantic import BaseModel, Field
 
 
-class AlertConfig(BaseModel):
-    enabled: bool = False
-    min_score_for_alert: float = Field(default=0.8, ge=0.0, le=1.0)
-    telegram_bot_token: str = ""
-    telegram_chat_id: str = ""
-    webhook_url: str = ""
-
-
 class DetectorConfig(BaseModel):
     quote_asset: str = "USDT"
     min_move_pct: float = Field(default=3.0, ge=2.0, description="Ignore smaller movements")
@@ -22,4 +14,3 @@ class DetectorConfig(BaseModel):
 
 
 DEFAULT_CONFIG = DetectorConfig()
-DEFAULT_ALERT_CONFIG = AlertConfig()

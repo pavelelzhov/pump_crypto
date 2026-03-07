@@ -9,37 +9,10 @@
   <body>
     <main class="container">
       <h1>Раннее обнаружение пампа (Bybit, low-cap altcoins)</h1>
-
-      <section class="grid panel">
-        <div>
-          <h2>Настройки детектора (live)</h2>
-          <form id="detector-form">
-            <label>min_move_pct <input name="min_move_pct" type="number" step="0.1" value="{{ config.min_move_pct }}"/></label>
-            <label>min_score <input name="min_score" type="number" step="0.01" value="{{ config.min_score }}"/></label>
-            <label>min_volume_spike_ratio <input name="min_volume_spike_ratio" type="number" step="0.1" value="{{ config.min_volume_spike_ratio }}"/></label>
-            <label>max_market_cap_usd <input name="max_market_cap_usd" type="number" step="1000000" value="{{ config.max_market_cap_usd }}"/></label>
-            <label>poll_interval_seconds <input name="poll_interval_seconds" type="number" step="0.5" value="{{ config.poll_interval_seconds }}"/></label>
-            <button type="submit">Сохранить настройки</button>
-          </form>
-        </div>
-        <div>
-          <h2>Алерты (Telegram/Webhook)</h2>
-          <form id="alert-form">
-            <label>enabled <input name="enabled" type="checkbox" {% if alert_config.enabled %}checked{% endif %}/></label>
-            <label>min_score_for_alert <input name="min_score_for_alert" type="number" step="0.01" value="{{ alert_config.min_score_for_alert }}"/></label>
-            <label>telegram_bot_token <input name="telegram_bot_token" type="password" placeholder="optional"/></label>
-            <label>telegram_chat_id <input name="telegram_chat_id" type="text" placeholder="optional"/></label>
-            <label>webhook_url <input name="webhook_url" type="url" placeholder="optional"/></label>
-            <button type="submit">Сохранить алерты</button>
-          </form>
-        </div>
-      </section>
-
       <section class="panel">
-        <h2>Сводка за 24ч</h2>
-        <pre id="report-box">Загрузка...</pre>
+        <h2>Параметры детектора</h2>
+        <pre id="config-box">{{ config }}</pre>
       </section>
-
       <section class="panel">
         <h2>Live сигналы</h2>
         <p id="status">Подключение...</p>

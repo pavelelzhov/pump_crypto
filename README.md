@@ -11,15 +11,11 @@
   - `suggested_take_profit_pct`
   - `suggested_stop_loss_pct`
 - Показывает все в веб-интерфейсе и логирует работу в `logs/app.log`.
-- Позволяет менять пороги детектора в UI без перезапуска.
-- Поддерживает алерты в Telegram/Webhook для high-score сигналов.
-- Строит 24h-сводку по качеству/частоте сигналов.
 
 ## Архитектура
 - `src/app/main.py` — FastAPI + WebSocket + HTTP API.
-- `src/app/service.py` — online loop, broadcast, cache market caps, live-config, report.
+- `src/app/service.py` — online loop, broadcast, cache market caps.
 - `src/app/detector.py` — логика раннего детекта пампа.
-- `src/app/notifiers.py` — отправка Telegram/Webhook алертов.
 - `src/app/clients.py` — интеграции Bybit/CoinGecko.
 - `src/app/templates/index.html` + `src/app/static/*` — UI.
 - `scripts/backtest.py` — бэктест на исторических свечах Bybit.
@@ -36,17 +32,7 @@ uvicorn app.main:app --reload --app-dir src
 ## API
 - `GET /api/health`
 - `GET /api/signals`
-- `GET /api/config`
-- `POST /api/config`
-- `POST /api/alerts`
-- `GET /api/report`
 - `WS /ws`
-
-## Как добавить алерты
-1. В UI включить `enabled` в блоке **Алерты**.
-2. Для Telegram заполнить `telegram_bot_token` и `telegram_chat_id`.
-3. Для webhook заполнить `webhook_url`.
-4. Установить `min_score_for_alert`.
 
 ## Конфиг
 Основные параметры в `src/app/config.py`:
@@ -54,6 +40,11 @@ uvicorn app.main:app --reload --app-dir src
 - `max_market_cap_usd` (default=1.5B)
 - `min_volume_spike_ratio`
 - `min_score`
+
+## Этапы разработки (суммаризация)
+1. **Этап 1 — Core backend:** реализованы интеграции, детектор ранней фазы, online loop, логирование.
+2. **Этап 2 — Web UI:** добавлен dashboard с live-таблицей сигналов по WebSocket.
+3. **Этап 3 — Качество:** добавлены unit/API тесты, backtest script, static security scan (Bandit).
 
 ## Важно
 - Это исследовательский аналитический инструмент, **не финансовая рекомендация**.
