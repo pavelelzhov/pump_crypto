@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bybit Early Pump Scanner</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Раннее обнаружение пампа (Bybit, low-cap altcoins)</h1>
+      <section class="panel">
+        <h2>Параметры детектора</h2>
+        <pre id="config-box">{{ config }}</pre>
+      </section>
+      <section class="panel">
+        <h2>Live сигналы</h2>
+        <p id="status">Подключение...</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Время UTC</th><th>Тикер</th><th>Score</th><th>Δ15s%</th><th>Δ60s%</th><th>Vol Spike</th><th>Take%</th><th>Stop%</th><th>Цена</th>
+            </tr>
+          </thead>
+          <tbody id="signals"></tbody>
+        </table>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
