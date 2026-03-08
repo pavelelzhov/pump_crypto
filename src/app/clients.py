@@ -32,10 +32,6 @@ class BybitClient:
                         symbol=symbol,
                         price=float(row.get("lastPrice", 0)),
                         volume_24h=float(row.get("turnover24h", 0)),
-                        open_interest=float(row.get("openInterest", 0)),
-                        funding_rate=float(row.get("fundingRate", 0)),
-                        bid1_price=float(row.get("bid1Price", 0)),
-                        ask1_price=float(row.get("ask1Price", 0)),
                         ts=now,
                     )
                 )
