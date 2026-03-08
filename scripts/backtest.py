@@ -25,10 +25,6 @@ async def run(symbol: str, limit: int) -> None:
             symbol=symbol,
             price=float(close),
             volume_24h=float(turnover),
-            open_interest=0.0,
-            funding_rate=0.0,
-            bid1_price=float(close),
-            ask1_price=float(close),
             ts=datetime.utcfromtimestamp(int(ts_ms) / 1000),
         )
         found = detector.ingest([tick], {symbol.removesuffix('USDT'): 500_000_000})

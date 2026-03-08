@@ -4,32 +4,29 @@ import asyncio
 import contextlib
 import json
 import logging
-from collections import Counter, deque
+from collections import deque
 from dataclasses import asdict
 from datetime import datetime, timedelta
 
 from fastapi import WebSocket
 
 from app.clients import BybitClient, CoinGeckoClient
-from app.config import AlertConfig, DetectorConfig
+from app.config import DetectorConfig
 from app.detector import PumpDetector
 from app.models import PumpSignal
-from app.notifiers import AlertDispatcher
 
 logger = logging.getLogger(__name__)
 
 
 class PumpScannerService:
-    def __init__(self, config: DetectorConfig, alert_config: AlertConfig) -> None:
+    def __init__(self, config: DetectorConfig) -> None:
         self.config = config
-        self.alert_config = alert_config
         self.bybit = BybitClient()
         self.coingecko = CoinGeckoClient()
         self.detector = PumpDetector(config)
-        self.dispatcher = AlertDispatcher(alert_config)
         self.market_caps: dict[str, float] = {}
         self.last_market_caps_update: datetime | None = None
-        self.signals: deque[PumpSignal] = deque(maxlen=400)
+        self.signals: deque[PumpSignal] = deque(maxlen=200)
         self.clients: set[WebSocket] = set()
         self.loop_task: asyncio.Task | None = None
         self.running = False
@@ -53,13 +50,7 @@ class PumpScannerService:
         await websocket.accept()
         self.clients.add(websocket)
         await websocket.send_json(
-            {
-                "type": "bootstrap",
-                "signals": [asdict(x) for x in self.signals],
-                "config": self.config.model_dump(),
-                "alert_config": self.safe_alert_config(),
-                "report": self.report(),
-            }
+            {"type": "bootstrap", "signals": [asdict(x) for x in self.signals]}
         )
 
     async def unregister(self, websocket: WebSocket) -> None:
@@ -74,7 +65,6 @@ class PumpScannerService:
                 for signal in found:
                     self.signals.appendleft(signal)
                     logger.info("Signal: %s", signal)
-                    await self.dispatcher.dispatch(signal)
                     await self._broadcast({"type": "signal", "payload": asdict(signal)})
             except Exception as exc:  # noqa: BLE001
                 logger.exception("Scan loop error: %s", exc)
@@ -107,48 +97,6 @@ class PumpScannerService:
     def list_signals(self) -> list[dict[str, object]]:
         return [asdict(x) for x in self.signals]
 
-    def update_config(self, values: dict[str, float | int | str]) -> DetectorConfig:
-        self.config = self.config.model_copy(update=values)
-        self.detector.config = self.config
-        return self.config
-
-    def update_alert_config(self, values: dict[str, object]) -> AlertConfig:
-        self.alert_config = self.alert_config.model_copy(update=values)
-        self.dispatcher.update_config(self.alert_config)
-        return self.alert_config
-
-    def safe_alert_config(self) -> dict[str, object]:
-        data = self.alert_config.model_dump()
-        data["telegram_bot_token_set"] = bool(data.get("telegram_bot_token"))
-        data["telegram_chat_id_set"] = bool(data.get("telegram_chat_id"))
-        data["webhook_url_set"] = bool(data.get("webhook_url"))
-        data.pop("telegram_bot_token", None)
-        data.pop("telegram_chat_id", None)
-        data.pop("webhook_url", None)
-        return data
-
-    def report(self) -> dict[str, object]:
-        day_ago = datetime.utcnow() - timedelta(hours=24)
-        fresh = [s for s in self.signals if s.timestamp >= day_ago]
-        if not fresh:
-            return {
-                "signals_24h": 0,
-                "avg_score": 0,
-                "avg_move_60s_pct": 0,
-                "avg_final_score": 0,
-                "top_symbols": [],
-                "ml_scored_signals": 0,
-            }
-        counter = Counter(x.symbol for x in fresh)
-        return {
-            "signals_24h": len(fresh),
-            "avg_score": round(sum(x.score for x in fresh) / len(fresh), 3),
-            "avg_final_score": round(sum(x.final_score for x in fresh) / len(fresh), 3),
-            "avg_move_60s_pct": round(sum(x.move_60s_pct for x in fresh) / len(fresh), 3),
-            "top_symbols": counter.most_common(5),
-            "ml_scored_signals": sum(1 for x in fresh if x.ml_score is not None),
-        }
-
     def health(self) -> dict[str, object]:
         return {
             "running": self.running,
@@ -158,6 +106,4 @@ class PumpScannerService:
             if self.last_market_caps_update
             else None,
             "detector_state": self.detector.snapshot_state(),
-            "alert_config": self.safe_alert_config(),
-            "report": self.report(),
         }

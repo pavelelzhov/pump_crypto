@@ -1,30 +1,24 @@
 # Bybit Early Pump Scanner (Web)
 
-Веб-агент для **онлайн анализа рынка крипты** с фокусом на ранние импульсы в low-cap альткоинах Bybit (без автоторговли).
+Веб-агент для **онлайн поиска зарождающихся пампов** в low-cap альткоинах на Bybit (без автоторговли).
 
 ## Что делает
 - Сканирует Bybit linear USDT-пары в реальном времени.
-- Фильтрует low/mid-cap альты по market cap (CoinGecko cache).
-- Игнорирует микродвижения: минимум по умолчанию `3%` за 60с.
-- Комбинирует rule-based и (опционально) ML-score (CatBoost), если модель загружена.
-- Показывает расширенные признаки сигнала:
-  - `score`, `final_score`, `ml_score`
-  - `regime`, `oi_delta_60s_pct`, `spread_bps`, `explanation`
-  - ориентиры `take/stop`
-- Позволяет менять пороги детектора в UI без перезапуска.
-- Поддерживает алерты в Telegram/Webhook.
-- Строит 24h-сводку по качеству сигналов.
+- Фильтрует только low/mid-cap альты по market cap (CoinGecko cache).
+- Игнорирует микродвижения: минимум по умолчанию `3%` за 60с (не 2%).
+- Ищет **раннюю фазу**: ускорение цены + всплеск объема + скоринг.
+- Для каждого сигнала дает ориентиры:
+  - `suggested_take_profit_pct`
+  - `suggested_stop_loss_pct`
+- Показывает все в веб-интерфейсе и логирует работу в `logs/app.log`.
 
 ## Архитектура
 - `src/app/main.py` — FastAPI + WebSocket + HTTP API.
-- `src/app/service.py` — online loop, broadcast, cache market caps, live-config, report.
-- `src/app/detector.py` — детектор импульса + regime + blending rule/ML score.
-- `src/app/ml.py` — загрузка/инференс CatBoost-модели.
-- `src/app/notifiers.py` — отправка Telegram/Webhook алертов.
+- `src/app/service.py` — online loop, broadcast, cache market caps.
+- `src/app/detector.py` — логика раннего детекта пампа.
 - `src/app/clients.py` — интеграции Bybit/CoinGecko.
 - `src/app/templates/index.html` + `src/app/static/*` — UI.
-- `scripts/backtest.py` — базовый backtest.
-- `scripts/train_catboost.py` — обучение CatBoost модели.
+- `scripts/backtest.py` — бэктест на исторических свечах Bybit.
 
 ## Быстрый старт
 ```bash
@@ -38,26 +32,19 @@ uvicorn app.main:app --reload --app-dir src
 ## API
 - `GET /api/health`
 - `GET /api/signals`
-- `GET /api/config`
-- `POST /api/config`
-- `POST /api/alerts`
-- `GET /api/report`
 - `WS /ws`
 
-## Как включить ML (CatBoost)
-1. Обучить модель:
-```bash
-python scripts/train_catboost.py --symbols WIFUSDT DOGEUSDT PEPEUSDT --limit 1200
-```
-2. Убедиться, что файл `artifacts/catboost_pump.cbm` создан.
-3. Перезапустить приложение.
-4. В `/api/health` поле `detector_state.ml_model_loaded` должно стать `true`.
+## Конфиг
+Основные параметры в `src/app/config.py`:
+- `min_move_pct` (>=2, default=3)
+- `max_market_cap_usd` (default=1.5B)
+- `min_volume_spike_ratio`
+- `min_score`
 
-## Как добавить алерты
-1. В UI включить `enabled` в блоке **Алерты**.
-2. Для Telegram заполнить `telegram_bot_token` и `telegram_chat_id`.
-3. Для webhook заполнить `webhook_url`.
-4. Установить `min_score_for_alert`.
+## Этапы разработки (суммаризация)
+1. **Этап 1 — Core backend:** реализованы интеграции, детектор ранней фазы, online loop, логирование.
+2. **Этап 2 — Web UI:** добавлен dashboard с live-таблицей сигналов по WebSocket.
+3. **Этап 3 — Качество:** добавлены unit/API тесты, backtest script, static security scan (Bandit).
 
 ## Важно
 - Это исследовательский аналитический инструмент, **не финансовая рекомендация**.
